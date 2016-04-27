@@ -78,6 +78,7 @@ func ParsePosition(s string) (p *Position, err error) {
 
 // GameState holds current round information that pertains to both players
 type GameState struct {
+	Winner            Winner
 	ThisPiece         Piece
 	NextPiece         Piece
 	ThisPiecePosition *Position
@@ -113,7 +114,19 @@ func (ps *PlayerState) processUpdate(type_, value string) (err error) {
 	return
 }
 
-func (gs *GameState) processUpdate(type_, value string) (err error) {
+// Winner is who won the game
+type Winner int
+
+const (
+	// none means no one has one yet
+	none Winner = iota
+	// You means the other bot one
+	You
+	// Me means this bot has won
+	Me
+)
+
+func (gs *GameState) processUpdate(name, type_, value string) (winner Winner, err error) {
 	switch type_ {
 	case "this_piece_type":
 		gs.ThisPiece = Piece(value)
@@ -121,6 +134,12 @@ func (gs *GameState) processUpdate(type_, value string) (err error) {
 		gs.NextPiece = Piece(value)
 	case "this_piece_position":
 		gs.ThisPiecePosition, err = ParsePosition(value)
+	case "winner":
+		if value == name {
+			winner = Me
+		} else {
+			winner = You
+		}
 	}
 	return
 }
@@ -133,26 +152,27 @@ func (s *State) processSettings(type_, value string) (err error) {
 	return
 }
 
-func (s *State) processUpdate(player, type_, value string) error {
+func (s *State) processUpdate(player, type_, value string) (Winner, error) {
 	if player == "game" {
-		return s.Game.processUpdate(type_, value)
+		return s.Game.processUpdate(s.Name, type_, value)
 	}
 	if player == s.Name {
-		return s.Mine.processUpdate(type_, value)
+		return none, s.Mine.processUpdate(type_, value)
 	}
-	return s.Yours.processUpdate(type_, value)
+	return none, s.Yours.processUpdate(type_, value)
 }
 
-func (s *State) processLine(line string) (shouldMove bool, err error) {
+func (s *State) processLine(line string) (gotAction bool, winner Winner, err error) {
 	parts := strings.Split(line, " ")
 	cmd, rest := parts[0], parts[1:]
 	switch cmd {
 	case "settings":
-		return false, s.processSettings(rest[0], rest[1])
+		return false, none, s.processSettings(rest[0], rest[1])
 	case "update":
-		return false, s.processUpdate(rest[0], rest[1], rest[2])
+		winner, err = s.processUpdate(rest[0], rest[1], rest[2])
+		return false, winner, err
 	case "action":
-		return true, nil
+		return true, none, nil
 	}
 	panic(line)
 }

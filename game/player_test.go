@@ -1,7 +1,6 @@
 package game
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -14,6 +13,9 @@ import (
 func TestProcess(t *testing.T) {
 	pInput := make(chan string)
 	pOutput := make(chan string)
+	defer close(pInput)
+	defer close(pOutput)
+
 	p := Player{pInput, pOutput}
 	sts, mvss := p.Process()
 
@@ -56,10 +58,10 @@ update player2 field 0,0,0,0,1,1,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0
 	engineSend("action moves 10000")
 	playerField := Field{}
 	playerField[0] = [10]Cell{0, 0, 0, 0, 1, 1, 0, 0, 0, 0}
-
-	assertState(&State{
+	st := State{
 		Name: "player1",
 		Game: &GameState{
+			Winner:            None,
 			ThisPiece:         "O",
 			NextPiece:         "I",
 			ThisPiecePosition: &Position{x: 4, y: -1},
@@ -76,9 +78,14 @@ update player2 field 0,0,0,0,1,1,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0
 			Skips:     0,
 			Field:     &playerField,
 		},
-	})
-	fmt.Printf("sending mvs %v\n", mvss)
+	}
+	assertState(&st)
 	mvss <- &[]Move{Left, Left, Left, Left, Down}
 
 	assertEngineGot("left,left,left,left,down")
+	engineSend(`update game winner player1
+action moves 100`)
+	st.Game.Winner = Me
+	assertState(&st)
+
 }
