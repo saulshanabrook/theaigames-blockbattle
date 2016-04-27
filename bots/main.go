@@ -1,6 +1,9 @@
 package bots
 
-import "github.com/saulshanabrook/blockbattle/game"
+import (
+	"github.com/saulshanabrook/blockbattle/game"
+	"github.com/saulshanabrook/blockbattle/player"
+)
 
 // Bot is anything that can play a game. All it has to do is take in a game
 // state and return a list of moves to perform
@@ -12,7 +15,7 @@ type Bot interface {
 }
 
 // Play starts using the bot to play a player
-func Play(b Bot, p *game.Player) {
+func Play(b Bot, p *player.Player) {
 	sts, win, mvss := p.Process()
 	for st := range sts {
 		mvss <- b.Act(st)

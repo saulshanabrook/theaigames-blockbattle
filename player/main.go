@@ -1,38 +1,6 @@
-package game
+package player
 
-import "strings"
-
-// Move is an action the player can take
-type Move int
-
-const (
-	Down Move = iota
-	Left
-	Right
-	TurnLeft
-	TurnRight
-	Skip
-)
-
-func AllMoves() []Move {
-	return []Move{Down, Left, Right, TurnLeft, TurnRight, Skip}
-}
-
-func serializeMoves(mvs *[]Move) (str string, err error) {
-	mvToStr := map[Move]string{
-		Down:      "down",
-		Left:      "left",
-		Right:     "right",
-		TurnLeft:  "turnleft",
-		TurnRight: "turnright",
-		Skip:      "skip",
-	}
-	strs := []string{}
-	for _, mv := range *mvs {
-		strs = append(strs, mvToStr[mv])
-	}
-	return strings.Join(strs, ","), nil
-}
+import "github.com/saulshanabrook/blockbattle/game"
 
 // Player can send instructions to the game and get instructions back
 type Player struct {
@@ -44,13 +12,13 @@ type Player struct {
 // the first you can read from to get the current state. Whenever you recieve
 // a state, you should send a list of moves on the second channel and then
 // wait for a new state again.
-func (p *Player) Process() (<-chan *State, <-chan Winner, chan<- *[]Move) {
-	sts := make(chan *State)
-	mvss := make(chan *[]Move)
-	win := make(chan Winner, 1)
+func (p *Player) Process() (<-chan *game.State, <-chan game.Winner, chan<- *[]game.Move) {
+	sts := make(chan *game.State)
+	mvss := make(chan *[]game.Move)
+	win := make(chan game.Winner, 1)
 	go func() {
 		defer close(sts)
-		st := NewState()
+		st := (*state)(game.NewState())
 		for {
 			// wait for a message from the server or some moves to send to it
 			// from the user
@@ -66,9 +34,9 @@ func (p *Player) Process() (<-chan *State, <-chan Winner, chan<- *[]Move) {
 					panic(err)
 				}
 				if gotAction {
-					sts <- st
+					sts <- (*game.State)(st)
 				}
-				if winner != none {
+				if winner != game.None {
 					win <- winner
 				}
 			case mvs := <-mvss:

@@ -1,9 +1,11 @@
-package game
+package player
 
 import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/saulshanabrook/blockbattle/game"
 )
 
 // TestProcess runs the begining of the example round here and make sure it works
@@ -17,7 +19,7 @@ func TestProcess(t *testing.T) {
 	defer close(pOutput)
 
 	p := Player{pInput, pOutput}
-	sts, mvss := p.Process()
+	sts, win, mvss := p.Process()
 
 	engineSend := func(msgs string) {
 		for _, msg := range strings.Split(msgs, "\n") {
@@ -25,9 +27,16 @@ func TestProcess(t *testing.T) {
 		}
 	}
 
-	assertState := func(s *State) {
+	assertState := func(s *game.State) {
 		if !reflect.DeepEqual(<-sts, s) {
 			t.Errorf("Got back wrong state: %+v", s)
+		}
+	}
+
+	assertWinner := func(w game.Winner) {
+		actualW := <-win
+		if actualW != w {
+			t.Errorf("Wrong winner: %v", actualW)
 		}
 	}
 
@@ -56,23 +65,23 @@ update player1 field 0,0,0,0,1,1,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0
 update player2 combo 0
 update player2 field 0,0,0,0,1,1,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0`)
 	engineSend("action moves 10000")
-	playerField := Field{}
-	playerField[0] = [10]Cell{0, 0, 0, 0, 1, 1, 0, 0, 0, 0}
-	st := State{
+	playerField := game.Field{}
+	playerField[0] = [10]game.Cell{0, 0, 0, 0, 1, 1, 0, 0, 0, 0}
+	st := game.State{
 		Name: "player1",
-		Game: &GameState{
-			Winner:            None,
+		Game: &game.GameState{
+			Winner:            game.None,
 			ThisPiece:         "O",
 			NextPiece:         "I",
-			ThisPiecePosition: &Position{x: 4, y: -1},
+			ThisPiecePosition: &game.Position{X: 4, Y: -1},
 		},
-		Mine: &PlayerState{
+		Mine: &game.PlayerState{
 			RowPoints: 1,
 			Combo:     5,
 			Skips:     10,
 			Field:     &playerField,
 		},
-		Yours: &PlayerState{
+		Yours: &game.PlayerState{
 			RowPoints: 0,
 			Combo:     0,
 			Skips:     0,
@@ -80,12 +89,11 @@ update player2 field 0,0,0,0,1,1,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0
 		},
 	}
 	assertState(&st)
-	mvss <- &[]Move{Left, Left, Left, Left, Down}
+	mvss <- &[]game.Move{game.Left, game.Left, game.Left, game.Left, game.Down}
 
 	assertEngineGot("left,left,left,left,down")
 	engineSend(`update game winner player1
 action moves 100`)
-	st.Game.Winner = Me
-	assertState(&st)
+	assertWinner(game.Me)
 
 }
