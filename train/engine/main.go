@@ -9,17 +9,17 @@ import (
 
 func main() {
 	var b bots.Bot = &bots.Random{}
-	players, err := player.NewUsingEngine()
+	players, err := NewPlayers()
 	if err != nil {
 		panic(err)
 	}
 	var wg sync.WaitGroup
-	for _, player := range players {
+	for _, p := range players {
 		wg.Add(1)
 		go func(p *player.Player) {
 			defer wg.Done()
 			bots.Play(b, p)
-		}(player)
+		}(p)
 	}
 	wg.Wait()
 }

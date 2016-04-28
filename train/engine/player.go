@@ -1,4 +1,4 @@
-package player
+package main
 
 // This file starts a local engine.
 //
@@ -17,6 +17,7 @@ import (
 	"os/exec"
 
 	"github.com/hpcloud/tail"
+	"github.com/saulshanabrook/blockbattle/player"
 )
 
 // pFiles holds input and output files for a certain player in a game
@@ -37,16 +38,16 @@ func newPlayerFiles() (pf *playerFiles, err error) {
 
 // ToPlayer creates a Player based on these files and starts up goroutines
 // to keep the channels on that player in sync with these files
-func (pf *playerFiles) toPlayer() *Player {
-	return &Player{
-		input:  readFileChan(pf.input),
-		output: writeFileChan(pf.output),
+func (pf *playerFiles) toPlayer() *player.Player {
+	return &player.Player{
+		Input:  readFileChan(pf.input),
+		Output: player.WriteFileChan(pf.output),
 	}
 }
 
 func (pf *playerFiles) command() string {
 	return fmt.Sprintf(
-		"./pipe.bash %v %v",
+		"./train/engine/pipe.bash %v %v",
 		pf.output.Name(),
 		pf.input.Name(),
 	)
@@ -64,11 +65,11 @@ func (pf *playerFiles) cleanup() {
 	return
 }
 
-// NewUsingEngine returns two players that are play against each other
+// NewPlayers returns two players that are play against each other
 // it runs the java code to start the game and hooks up the player
 // inputs and outputs to the java process through intermediary files
-func NewUsingEngine() (ps [2]*Player, err error) {
-	ps = [2]*Player{}
+func NewPlayers() (ps [2]*player.Player, err error) {
+	ps = [2]*player.Player{}
 	pfss := [2]*playerFiles{}
 	pCmds := [2]string{}
 	for i := range pfss {
@@ -96,7 +97,7 @@ func startEngine(pCmds [2]string) error {
 	cmd := exec.Command(
 		"java",
 		"-cp",
-		"bin",
+		"train/engine/javac",
 		"com.theaigames.blockbattle.Blockbattle",
 		pCmds[0],
 		pCmds[1],
@@ -115,34 +116,21 @@ func cleanupFile(f *os.File) (err error) {
 	return os.Remove(f.Name())
 }
 
-// readFile takes in a file and returns a channel that sends each
+// readFileChan takes in a file and returns a channel that sends each
 // line in the file
 func readFileChan(file *os.File) <-chan string {
 	lines := make(chan string)
 	go func() {
 		defer close(lines)
-		t, err := tail.TailFile(file.Name(), tail.Config{Follow: true})
+		t, err := tail.TailFile(
+			file.Name(),
+			tail.Config{Follow: true})
 		if err != nil {
 			panic(err)
 		}
 		for line := range t.Lines {
 			lineT := line.Text
 			lines <- lineT
-		}
-	}()
-	return lines
-}
-
-// writeFileChan takes in a file and returns a channel that when you
-// send on it, that line will be written to the file
-func writeFileChan(file *os.File) chan<- string {
-	lines := make(chan string)
-	go func() {
-		for line := range lines {
-			_, err := file.WriteString(line + "\n")
-			if err != nil {
-				panic(err)
-			}
 		}
 	}()
 	return lines

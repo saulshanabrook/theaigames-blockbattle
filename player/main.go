@@ -4,8 +4,8 @@ import "github.com/saulshanabrook/blockbattle/game"
 
 // Player can send instructions to the game and get instructions back
 type Player struct {
-	input  <-chan string
-	output chan<- string
+	Input  <-chan string
+	Output chan<- string
 }
 
 // Process starts a goroutine processing the player. It returns two channels.
@@ -23,7 +23,7 @@ func (p *Player) Process() (<-chan *game.State, <-chan game.Winner, chan<- *[]ga
 			// wait for a message from the server or some moves to send to it
 			// from the user
 			select {
-			case msg := <-p.input:
+			case msg := <-p.Input:
 				// we have closed the channel so the file has been deleted so we are
 				// done and we can exit
 				if msg == "" {
@@ -45,7 +45,7 @@ func (p *Player) Process() (<-chan *game.State, <-chan game.Winner, chan<- *[]ga
 				if err != nil {
 					panic(err)
 				}
-				p.output <- msg
+				p.Output <- msg
 			}
 		}
 	}()

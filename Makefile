@@ -1,13 +1,18 @@
-bot.zip: bots/binary/data.go bots/binary/main.go
-	cd bots; zip -9 -r ../bot.zip ./binary/
+bot.zip: bots/binary/bot bots/binary/main.c
+	cd bots; zip -9 -x "*.DS_Store" -x "binary/main" -r ../bot.zip ./binary/
 
-bots/process/main:
+bots/binary/bot:
 	# http://stackoverflow.com/a/21135705/907060
-	env GOOS=linux GOARCH=amd64 go build -o bots/process/main -ldflags "-s" bots/process/main.go
+	env GOOS=linux GOARCH=amd64 go build -o bots/binary/bot -ldflags "-s" bots/process/*.go
 
-bots/binary/data.go: bots/process/main
-	go-bindata -nomemcopy -nocompress -o bots/binary/data.go  bots/process/main
+train/engine/javac/com/theaigames/blockbattle/Blockbattle.class:
+	mkdir -p train/engine/javac
+	javac -d train/engine/javac/ `find ./train/engine/java -name '*.java'`
 
-bin/com:
-	mkdir -p bin
-	javac -d bin/ `find ./engine/blockbattle-engine/ -name '*.java'`
+clean:
+	rm -f bots/binary/bot bot.zip
+
+train: train/engine/javac/com/theaigames/blockbattle/Blockbattle.class
+	go run train/engine/*.go
+
+.PHONY: clean train

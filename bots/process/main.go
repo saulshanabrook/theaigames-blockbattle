@@ -1,12 +1,9 @@
 package main
 
-import (
-	"github.com/saulshanabrook/blockbattle/bots"
-	"github.com/saulshanabrook/blockbattle/player"
-)
+import "github.com/saulshanabrook/blockbattle/bots"
 
 func main() {
-	var bot bots.Bot = &bots.Random{}
-	player := player.NewUsingProcess()
-	bots.Play(bot, player)
+	var b bots.Bot = &bots.Random{}
+	p := NewPlayer()
+	bots.Play(b, p)
 }
