@@ -64,10 +64,10 @@ func (pf *playerFiles) cleanup() {
 	return
 }
 
-// NewPlayersUsingEngine returns two players that are play against each other
+// NewUsingEngine returns two players that are play against each other
 // it runs the java code to start the game and hooks up the player
 // inputs and outputs to the java process through intermediary files
-func NewPlayersUsingEngine() (ps [2]*Player, err error) {
+func NewUsingEngine() (ps [2]*Player, err error) {
 	ps = [2]*Player{}
 	pfss := [2]*playerFiles{}
 	pCmds := [2]string{}

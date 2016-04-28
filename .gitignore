@@ -1,2 +1,5 @@
 .DS_Store
 bin/
+bot.zip
+bots/process/main
+bots/binary/data.go

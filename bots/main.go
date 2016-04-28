@@ -11,14 +11,12 @@ import (
 // this state
 type Bot interface {
 	Act(*game.State) *[]game.Move
-	ProcessWinner(game.Winner)
 }
 
 // Play starts using the bot to play a player
 func Play(b Bot, p *player.Player) {
-	sts, win, mvss := p.Process()
+	sts, _, mvss := p.Process()
 	for st := range sts {
 		mvss <- b.Act(st)
 	}
-	b.ProcessWinner(<-win)
 }

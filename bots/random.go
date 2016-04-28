@@ -1,7 +1,6 @@
 package bots
 
 import (
-	"fmt"
 	"math/rand"
 
 	"github.com/saulshanabrook/blockbattle/game"
@@ -14,7 +13,8 @@ func random(min, max int) int {
 	return rand.Intn(max-min) + min
 }
 
-func (_ *Random) Act(s *game.State) *[]game.Move {
+// Act takes a random move
+func (_ *Random) Act(_ *game.State) *[]game.Move {
 	possibleMoves := game.AllMoves()
 
 	randMove := func() game.Move {
@@ -22,8 +22,4 @@ func (_ *Random) Act(s *game.State) *[]game.Move {
 		return possibleMoves[i]
 	}
 	return &[]game.Move{randMove(), randMove(), randMove()}
-}
-
-func (_ *Random) ProcessWinner(w game.Winner) {
-	fmt.Println(w)
 }

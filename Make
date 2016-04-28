@@ -1,3 +1,0 @@
-bin/com:
-  mkdir -p bin
-  javac -d bin/ `find ./engine/blockbattle-engine/ -name '*.java'`
