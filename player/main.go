@@ -12,9 +12,9 @@ type Player struct {
 // the first you can read from to get the current state. Whenever you recieve
 // a state, you should send a list of moves on the second channel and then
 // wait for a new state again.
-func (p *Player) Process() (<-chan *game.State, <-chan game.Winner, chan<- *[]game.Move) {
+func (p *Player) Process() (<-chan *game.State, <-chan game.Winner, chan<- []game.Move) {
 	sts := make(chan *game.State)
-	mvss := make(chan *[]game.Move)
+	mvss := make(chan []game.Move)
 	win := make(chan game.Winner, 1)
 	go func() {
 		defer close(sts)

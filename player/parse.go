@@ -45,14 +45,14 @@ func (s *state) processUpdate(player, type_, value string) (game.Winner, error) 
 }
 
 // newPosition turns a string like `4,-1` into a position
-func newPosition(s string) (p *game.Position, err error) {
-	p = &game.Position{}
+func newPosition(s string) (p game.Position, err error) {
+	p = game.Position{}
 	ss := strings.Split(s, ",")
-	p.X, err = strconv.Atoi(ss[0])
+	p.Column, err = strconv.Atoi(ss[0])
 	if err != nil {
 		return
 	}
-	p.Y, err = strconv.Atoi(ss[1])
+	p.Row, err = strconv.Atoi(ss[1])
 	return
 }
 
@@ -93,25 +93,25 @@ func (gs *gameState) processUpdate(name, type_, value string) (winner game.Winne
 }
 
 // serializeMoves returns the textual representation of the moves
-func serializeMoves(mvs *[]game.Move) (str string, err error) {
+func serializeMoves(mvs []game.Move) (str string, err error) {
 	mvToStr := map[game.Move]string{
-		game.Down:      "down",
-		game.Left:      "left",
-		game.Right:     "right",
-		game.TurnLeft:  "turnleft",
-		game.TurnRight: "turnright",
-		game.Skip:      "skip",
+		game.MoveDown:      "down",
+		game.MoveLeft:      "left",
+		game.MoveRight:     "right",
+		game.MoveTurnLeft:  "turnleft",
+		game.MoveTurnRight: "turnright",
+		game.MoveSkip:      "skip",
 	}
 	strs := []string{}
-	for _, mv := range *mvs {
+	for _, mv := range mvs {
 		strs = append(strs, mvToStr[mv])
 	}
 	return strings.Join(strs, ","), nil
 }
 
 // newField parses a string like `[[c,...];...]` into a field
-func newField(s string) (f *game.Field, err error) {
-	f = &game.Field{}
+func newField(s string) (f game.Field, err error) {
+	f = game.Field{}
 	lines := strings.Split(s, ";")
 	for row, line := range lines {
 		cells := strings.Split(line, ",")

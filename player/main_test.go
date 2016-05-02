@@ -73,23 +73,23 @@ update player2 field 0,0,0,0,1,1,0,0,0,0;0,0,0,0,0,0,0,0,0,0;0,0,0,0,0,0,0,0,0,0
 			Winner:            game.None,
 			ThisPiece:         "O",
 			NextPiece:         "I",
-			ThisPiecePosition: &game.Position{X: 4, Y: -1},
+			ThisPiecePosition: game.Position{Column: 4, Row: -1},
 		},
 		Mine: &game.PlayerState{
 			RowPoints: 1,
 			Combo:     5,
 			Skips:     10,
-			Field:     &playerField,
+			Field:     playerField,
 		},
 		Yours: &game.PlayerState{
 			RowPoints: 0,
 			Combo:     0,
 			Skips:     0,
-			Field:     &playerField,
+			Field:     playerField,
 		},
 	}
 	assertState(&st)
-	mvss <- &[]game.Move{game.Left, game.Left, game.Left, game.Left, game.Down}
+	mvss <- []game.Move{game.MoveLeft, game.MoveLeft, game.MoveLeft, game.MoveLeft, game.MoveDown}
 
 	assertEngineGot("left,left,left,left,down")
 	engineSend(`update game winner player1

@@ -5,7 +5,7 @@ type PlayerState struct {
 	RowPoints int
 	Combo     int
 	Skips     int
-	Field     *Field
+	Field     Field
 }
 
 // GameState holds current round information that pertains to both players
@@ -13,7 +13,7 @@ type GameState struct {
 	Winner            Winner
 	ThisPiece         Piece
 	NextPiece         Piece
-	ThisPiecePosition *Position
+	ThisPiecePosition Position
 }
 
 // State is a representation of whole current state
@@ -47,6 +47,6 @@ func NewState() (st *State) {
 
 func newPlayerState() (ps *PlayerState) {
 	ps = &PlayerState{}
-	ps.Field = &Field{}
+	ps.Field = Field{}
 	return
 }

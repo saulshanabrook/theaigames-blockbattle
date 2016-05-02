@@ -4,14 +4,20 @@ package game
 type Move int
 
 const (
-	Down Move = iota
-	Left
-	Right
-	TurnLeft
-	TurnRight
-	Skip
+	MoveDown Move = iota
+	MoveLeft
+	MoveRight
+	MoveTurnLeft
+	MoveTurnRight
+	MoveSkip
 )
 
-func AllMoves() []Move {
-	return []Move{Down, Left, Right, TurnLeft, TurnRight, Skip}
+var AllMoves = []Move{MoveDown, MoveLeft, MoveRight, MoveTurnLeft, MoveTurnRight, MoveSkip}
+
+var moveLocationDiffs = map[Move]*Location{
+	MoveDown:      {Position: Position{Row: 1}},
+	MoveLeft:      {Position: Position{Column: -1}},
+	MoveRight:     {Position: Position{Column: 1}},
+	MoveTurnLeft:  {Rotation: RotatedLeft},
+	MoveTurnRight: {Rotation: RotatedRight},
 }

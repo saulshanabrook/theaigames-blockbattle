@@ -10,7 +10,7 @@ import (
 // It also has to handle when the game finishes, if it wants to do something with
 // this state
 type Bot interface {
-	Act(*game.State) *[]game.Move
+	Act(*game.State) []game.Move
 }
 
 // Play starts using the bot to play a player
