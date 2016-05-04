@@ -17,13 +17,6 @@ func BenchmarkMain(b *testing.B) {
 	}
 }
 
-func BenchmarkNoLearning(b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		l := learn.NewLearner(learn.LearnerConfig{MinibatchSize: 0, DiscountFactor: 0.9})
-		l.RunEpisodes(1)
-	}
-}
-
 func BenchmarkNewLearner(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		learn.NewLearner(learn.DefaultLearnerConfig)

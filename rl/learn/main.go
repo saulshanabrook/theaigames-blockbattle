@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"sync"
 
+	"github.com/NOX73/go-neural/persist"
 	"github.com/saulshanabrook/blockbattle/game"
 	"github.com/saulshanabrook/blockbattle/player"
 	"github.com/saulshanabrook/blockbattle/rl/bot"
@@ -23,13 +24,11 @@ type Learner struct {
 }
 
 type LearnerConfig struct {
-	MinibatchSize  int
 	DiscountFactor float64
 }
 
 // copied from deepmind paper
 var DefaultLearnerConfig = LearnerConfig{
-	32,
 	0.9,
 }
 
@@ -45,6 +44,7 @@ func NewLearner(c LearnerConfig) *Learner {
 // RunEpisodes runs n epsidoes starting epsilon at 1 and bringing it linearly
 // to 0.1 over the first 1/2 of the trainin and keeping it at 0.1 for the rest
 func (l *Learner) RunEpisodes(n int) error {
+	go l.startTraining()
 	for i := 0; i < n; i++ {
 		pComplete := float64(i) / float64(n)
 		var pRandAct float64
@@ -80,6 +80,11 @@ func (l *Learner) RunEpisode(pRandAct float64) error {
 	return nil
 }
 
+// Persist saves this NN to a file
+func (l *Learner) Persist(filename string) {
+	persist.DumpToFile(filename, l.b.Engine.Dump())
+}
+
 func (l *Learner) play(p player.Player, pRandAct float64) {
 	defer close(p.Moves)
 	st := <-p.States
@@ -100,7 +105,6 @@ func (l *Learner) play(p player.Player, pRandAct float64) {
 			return
 		}
 		l.recordExperience(st, loc, nextSt)
-		go l.trainMinibatch()
 		if nextSt.IsOver() {
 			return
 		}
@@ -108,22 +112,29 @@ func (l *Learner) play(p player.Player, pRandAct float64) {
 	}
 }
 
-func (l *Learner) trainMinibatch() {
-	for i := 0; i < l.c.MinibatchSize; i++ {
-		exp := l.exps.pick()
-		var nextVal float64
-		if exp.nextSt.IsOver() {
-			nextVal = 0
-		} else {
-			_, _, nextVal = l.b.BestAction(exp.nextSt)
+func (l *Learner) startTraining() {
+	go func() {
+		<-l.exps.readyChan
+		for {
+			l.train()
 		}
+	}()
+}
 
-		l.b.Learn(
-			exp.combFeatures,
-			[]float64{exp.reward + l.c.DiscountFactor*nextVal},
-			nnSpeed,
-		)
+func (l *Learner) train() {
+	exp := l.exps.pick()
+	var nextVal float64
+	if exp.nextSt.IsOver() {
+		nextVal = 0
+	} else {
+		_, _, nextVal = l.b.BestAction(exp.nextSt)
 	}
+
+	l.b.Learn(
+		exp.combFeatures,
+		[]float64{exp.reward + l.c.DiscountFactor*nextVal},
+		nnSpeed,
+	)
 }
 
 func (l *Learner) recordExperience(st game.State, loc game.Location, nextSt game.State) {

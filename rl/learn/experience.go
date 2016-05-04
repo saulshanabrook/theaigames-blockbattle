@@ -15,19 +15,23 @@ type experience struct {
 }
 
 type experiences struct {
-	exps     *[]*experience
-	toAdd    chan *experience
-	needPick chan interface{}
-	picked   chan *experience
+	exps        *[]*experience
+	toAdd       chan *experience
+	needPick    chan interface{}
+	picked      chan *experience
+	readyClosed bool
+	readyChan   chan interface{}
 }
 
 func newExperiences() *experiences {
 	exps := make([]*experience, 0, maxExperiences)
 	es := experiences{
-		exps:     &exps,
-		toAdd:    make(chan *experience),
-		needPick: make(chan interface{}),
-		picked:   make(chan *experience),
+		exps:        &exps,
+		toAdd:       make(chan *experience),
+		needPick:    make(chan interface{}),
+		picked:      make(chan *experience),
+		readyClosed: false,
+		readyChan:   make(chan interface{}),
 	}
 	go es.process()
 	return &es
@@ -46,6 +50,10 @@ func (es *experiences) process() {
 				(*es.exps)[rand.Intn(len(*es.exps))] = e
 			} else {
 				*es.exps = append(*es.exps, e)
+			}
+			if !es.readyClosed {
+				es.readyClosed = true
+				close(es.readyChan)
 			}
 		case <-es.needPick:
 			es.picked <- (*es.exps)[rand.Intn(len(*es.exps))]
