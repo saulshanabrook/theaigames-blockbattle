@@ -16,7 +16,9 @@ type Bot interface {
 // Play starts using the bot to play a player
 func Play(b Bot, p player.Player) {
 	for st := range p.States {
-		p.Moves <- b.Act(st)
+		if !st.IsOver() {
+			p.Moves <- b.Act(st)
+		}
 	}
 	close(p.Moves)
 }

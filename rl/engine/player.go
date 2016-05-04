@@ -104,7 +104,7 @@ func startEngine(pCmds [2]string) error {
 		pCmds[1],
 	)
 	// cmd.Stdout = os.Stdout
-	// cmd.Stderr = os.Stderr
+	cmd.Stderr = os.Stderr
 
 	return cmd.Run()
 }

@@ -10,10 +10,6 @@ import (
 	bbEngine "github.com/saulshanabrook/blockbattle/rl/engine"
 )
 
-// copied from deepmind paper
-const minibatchSize = 32
-const discountFactor = 0.9
-
 // this is the back prop "speed"
 // https://github.com/NOX73/go-neural/blob/f327eff30de74b5b2d18236415bd35a2ee5c4e59/learn/learn.go#L47
 // 0.9 just seemed like an OK constant
@@ -23,13 +19,26 @@ const nnSpeed = 0.9
 type Learner struct {
 	b    *bot.Bot
 	exps *experiences
+	c    LearnerConfig
+}
+
+type LearnerConfig struct {
+	MinibatchSize  int
+	DiscountFactor float64
+}
+
+// copied from deepmind paper
+var DefaultLearnerConfig = LearnerConfig{
+	32,
+	0.9,
 }
 
 // NewLearner creates a blank agent state
-func NewLearner() *Learner {
+func NewLearner(c LearnerConfig) *Learner {
 	return &Learner{
 		bot.New(),
 		newExperiences(),
+		c,
 	}
 }
 
@@ -91,7 +100,7 @@ func (l *Learner) play(p player.Player, pRandAct float64) {
 			return
 		}
 		l.recordExperience(st, loc, nextSt)
-		l.trainMinibatch()
+		go l.trainMinibatch()
 		if nextSt.IsOver() {
 			return
 		}
@@ -100,7 +109,7 @@ func (l *Learner) play(p player.Player, pRandAct float64) {
 }
 
 func (l *Learner) trainMinibatch() {
-	for i := 0; i < minibatchSize; i++ {
+	for i := 0; i < l.c.MinibatchSize; i++ {
 		exp := l.exps.pick()
 		var nextVal float64
 		if exp.nextSt.IsOver() {
@@ -111,7 +120,7 @@ func (l *Learner) trainMinibatch() {
 
 		l.b.Learn(
 			exp.combFeatures,
-			[]float64{exp.reward + discountFactor*nextVal},
+			[]float64{exp.reward + l.c.DiscountFactor*nextVal},
 			nnSpeed,
 		)
 	}
