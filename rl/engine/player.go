@@ -42,7 +42,7 @@ func NewPlayers() ([2]player.Player, error) {
 			States: player.Parse(closeOnEnd(lineStrings(tailLines(inF)))),
 			Moves:  mvss,
 		}
-		cleanup(inF, cleanup(outF, player.WriteFileChan(outF, player.Serialize(mvss))))
+		cleanup(inF, cleanup(outF, writeFileChan(outF, player.Serialize(mvss))))
 	}
 	go func() {
 		handleErr(startEngine(pCmds))
@@ -146,4 +146,18 @@ func handleErr(err error) {
 		panic(err)
 	}
 	return
+}
+
+func writeFileChan(file *os.File, lines <-chan string) (done <-chan string) {
+	doneRW := make(chan string)
+	go func() {
+		for line := range lines {
+			_, err := file.WriteString(line + "\n")
+			if err != nil {
+				panic(err)
+			}
+		}
+		close(doneRW)
+	}()
+	return doneRW
 }

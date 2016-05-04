@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 
 	"github.com/saulshanabrook/blockbattle/game"
@@ -11,7 +12,7 @@ import (
 // NewPlayer returns a player that uses stdin and stdout out to communicate
 func NewPlayer() player.Player {
 	mvs := make(chan []game.Move)
-	player.WriteFileChan(os.Stdout, player.Serialize(mvs))
+	go writeStdinChan(player.Serialize(mvs))
 	return player.Player{
 		States: player.Parse(readStdinChan()),
 		Moves:  mvs,
@@ -28,4 +29,10 @@ func readStdinChan() <-chan string {
 		close(lines)
 	}()
 	return lines
+}
+
+func writeStdinChan(lines <-chan string) {
+	for line := range lines {
+		fmt.Println(line)
+	}
 }
