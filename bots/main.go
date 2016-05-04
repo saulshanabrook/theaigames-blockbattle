@@ -10,13 +10,13 @@ import (
 // It also has to handle when the game finishes, if it wants to do something with
 // this state
 type Bot interface {
-	Act(*game.State) []game.Move
+	Act(game.State) []game.Move
 }
 
 // Play starts using the bot to play a player
-func Play(b Bot, p *player.Player) {
-	sts, _, mvss := p.Process()
-	for st := range sts {
-		mvss <- b.Act(st)
+func Play(b Bot, p player.Player) {
+	for st := range p.States {
+		p.Moves <- b.Act(st)
 	}
+	close(p.Moves)
 }

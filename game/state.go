@@ -19,9 +19,14 @@ type GameState struct {
 // State is a representation of whole current state
 type State struct {
 	Name  string
-	Game  *GameState
-	Mine  *PlayerState
-	Yours *PlayerState
+	Game  GameState
+	Mine  PlayerState
+	Yours PlayerState
+}
+
+// IsOver returns if there is a winner
+func (s State) IsOver() bool {
+	return s.Game.Winner != None
 }
 
 // Winner is who won the game
@@ -34,19 +39,29 @@ const (
 	You
 	// Me means this bot has won
 	Me
+	// Tie means neither of us one
+	Tie
 )
 
 // NewState returns a blank state with zero value
-func NewState() (st *State) {
-	st = &State{}
-	st.Game = &GameState{}
-	st.Mine = newPlayerState()
-	st.Yours = newPlayerState()
-	return
+func NewState() State {
+	return State{
+		Game:  GameState{},
+		Mine:  newPlayerState(),
+		Yours: newPlayerState(),
+	}
 }
 
-func newPlayerState() (ps *PlayerState) {
-	ps = &PlayerState{}
+// Actions returns a list locations and moves you can make during this game
+func (s *State) Actions() map[Location][]Move {
+	if s.IsOver() {
+		panic("Game is over")
+	}
+	return s.Mine.Field.Actions(s.Game.ThisPiece, s.Game.ThisPiecePosition)
+}
+
+func newPlayerState() PlayerState {
+	ps := PlayerState{}
 	ps.Field = Field{}
-	return
+	return ps
 }

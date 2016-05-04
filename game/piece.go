@@ -13,6 +13,8 @@ const (
 	Z       = "Z"
 )
 
+var AllPieces = []Piece{I, J, L, O, S, T, Z}
+
 var grids = map[Piece]map[Rotation]grid{
 	I: {
 		RotatedUp: {

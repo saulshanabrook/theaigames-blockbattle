@@ -11,37 +11,36 @@ type state game.State
 
 // processLine takes a line from the server and updates the state with it,
 // returning if we have a winner and if we got an action
-func (s *state) processLine(line string) (gotAction bool, winner game.Winner, err error) {
+func (s *state) processLine(line string) (gotAction bool, err error) {
 	parts := strings.Split(line, " ")
 	cmd, rest := parts[0], parts[1:]
 	switch cmd {
 	case "settings":
-		return false, game.None, s.processSettings(rest[0], rest[1])
+		return false, s.processSettings(rest[0], rest[1])
 	case "update":
-		winner, err = s.processUpdate(rest[0], rest[1], rest[2])
-		return false, winner, err
+		return false, s.processUpdate(rest[0], rest[1], rest[2])
 	case "action":
-		return true, game.None, nil
+		return true, nil
 	}
 	panic(line)
 }
 
-func (s *state) processSettings(type_, value string) (err error) {
-	switch type_ {
+func (s *state) processSettings(typeS, value string) (err error) {
+	switch typeS {
 	case "your_bot":
 		s.Name = value
 	}
 	return
 }
 
-func (s *state) processUpdate(player, type_, value string) (game.Winner, error) {
+func (s *state) processUpdate(player, typeS, value string) error {
 	if player == "game" {
-		return (*gameState)(s.Game).processUpdate(s.Name, type_, value)
+		return (*gameState)(&s.Game).processUpdate(s.Name, typeS, value)
 	}
 	if player == s.Name {
-		return game.None, (*playerState)(s.Mine).processUpdate(type_, value)
+		return (*playerState)(&s.Mine).processUpdate(typeS, value)
 	}
-	return game.None, (*playerState)(s.Yours).processUpdate(type_, value)
+	return (*playerState)(&s.Yours).processUpdate(typeS, value)
 }
 
 // newPosition turns a string like `4,-1` into a position
@@ -58,8 +57,8 @@ func newPosition(s string) (p game.Position, err error) {
 
 type playerState game.PlayerState
 
-func (ps *playerState) processUpdate(type_, value string) (err error) {
-	switch type_ {
+func (ps *playerState) processUpdate(typeS, value string) (err error) {
+	switch typeS {
 	case "row_points":
 		ps.RowPoints, err = strconv.Atoi(value)
 	case "combo":
@@ -74,8 +73,8 @@ func (ps *playerState) processUpdate(type_, value string) (err error) {
 
 type gameState game.GameState
 
-func (gs *gameState) processUpdate(name, type_, value string) (winner game.Winner, err error) {
-	switch type_ {
+func (gs *gameState) processUpdate(name, typeS, value string) (err error) {
+	switch typeS {
 	case "this_piece_type":
 		gs.ThisPiece = game.Piece(value)
 	case "next_piece_type":
@@ -83,11 +82,7 @@ func (gs *gameState) processUpdate(name, type_, value string) (winner game.Winne
 	case "this_piece_position":
 		gs.ThisPiecePosition, err = newPosition(value)
 	case "winner":
-		if value == name {
-			winner = game.Me
-		} else {
-			winner = game.You
-		}
+		gs.Winner = newWinner(value)
 	}
 	return
 }
@@ -126,4 +121,16 @@ func newField(s string) (f game.Field, err error) {
 		}
 	}
 	return
+}
+
+func newWinner(s string) game.Winner {
+	switch s {
+	case "me":
+		return game.Me
+	case "you":
+		return game.You
+	case "tie":
+		return game.Tie
+	}
+	panic(s)
 }

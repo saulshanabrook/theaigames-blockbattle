@@ -10,7 +10,7 @@ import (
 type Random struct{}
 
 // Act takes a random move
-func (r Random) Act(_ *game.State) []game.Move {
+func (r Random) Act(_ game.State) []game.Move {
 	possibleMoves := game.AllMoves
 
 	randMove := func() game.Move {

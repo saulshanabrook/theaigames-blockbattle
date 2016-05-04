@@ -5,9 +5,9 @@ bots/binary/bot: $(shell find .  -iname "*.go" -type f)
 	# http://stackoverflow.com/a/21135705/907060
 	env GOOS=linux GOARCH=amd64 go build -o bots/binary/bot -ldflags "-s" bots/process/*.go
 
-train/engine/javac/com/theaigames/blockbattle/Blockbattle.class:
-	mkdir -p train/engine/javac
-	javac -d train/engine/javac/ `find ./train/engine/java -name '*.java'`
+rl/engine/javac/com/theaigames/blockbattle/Blockbattle.class: $(shell find .  -iname "*.java" -type f)
+	mkdir -p rl/engine/javac
+	javac -d rl/engine/javac/ `find ./rl/engine/java -name '*.java'`
 
 clean:
 	rm -f bots/binary/bot bot.zip

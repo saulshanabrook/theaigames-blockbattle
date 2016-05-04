@@ -7,7 +7,7 @@ import "github.com/saulshanabrook/blockbattle/game"
 type RandomAction struct{}
 
 // Act takes a random move
-func (ra RandomAction) Act(s *game.State) []game.Move {
+func (ra RandomAction) Act(s game.State) []game.Move {
 	possibleActions := s.Mine.Field.Actions(s.Game.ThisPiece, s.Game.ThisPiecePosition)
 	for _, mvs := range possibleActions {
 		return mvs
