@@ -2,4 +2,6 @@
 bot.zip
 bots/binary/bot
 bots/binary/main
+bots/process/nn
+bots/process/nn.go
 rl/engine/javac
