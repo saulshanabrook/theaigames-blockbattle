@@ -17,6 +17,7 @@ type Player struct {
 func Parse(msgs <-chan string) <-chan game.State {
 	sts := make(chan game.State)
 	go func() {
+		defer close(sts)
 		st := (state)(game.NewState())
 		for msg := range msgs {
 			gotAction, err := st.processLine(msg)
@@ -26,7 +27,6 @@ func Parse(msgs <-chan string) <-chan game.State {
 				sts <- (game.State)(st)
 			}
 		}
-		close(sts)
 	}()
 	return sts
 }
