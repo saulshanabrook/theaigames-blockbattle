@@ -84,6 +84,12 @@ func (l *Learner) play(p player.Player, pRandAct float64) {
 		}
 		p.Moves <- mvs
 		nextSt := <-p.States
+
+		// got null value which means channel is closed
+		// and game ended because of timeout
+		if (nextSt == game.State{}) {
+			return
+		}
 		l.recordExperience(st, loc, nextSt)
 		l.trainMinibatch()
 		if nextSt.IsOver() {
@@ -96,7 +102,12 @@ func (l *Learner) play(p player.Player, pRandAct float64) {
 func (l *Learner) trainMinibatch() {
 	for i := 0; i < minibatchSize; i++ {
 		exp := l.exps.pick()
-		_, _, nextVal := l.b.BestAction(exp.nextSt)
+		var nextVal float64
+		if exp.nextSt.IsOver() {
+			nextVal = 0
+		} else {
+			_, _, nextVal = l.b.BestAction(exp.nextSt)
+		}
 
 		l.b.Learn(
 			exp.combFeatures,
@@ -107,7 +118,7 @@ func (l *Learner) trainMinibatch() {
 }
 
 func (l *Learner) recordExperience(st game.State, loc game.Location, nextSt game.State) {
-	l.exps.add(experience{
+	l.exps.add(&experience{
 		combFeatures: append(bot.StateFeatures(st), bot.ActionFeatures(loc)...),
 		reward:       reward(nextSt, st),
 		nextSt:       nextSt,

@@ -39,7 +39,7 @@ func NewPlayers() ([2]player.Player, error) {
 
 		mvss := make(chan []game.Move)
 		ps[i] = player.Player{
-			States: player.Parse(readFileChan(inF)),
+			States: player.Parse(closeOnEnd(lineStrings(tailLines(inF)))),
 			Moves:  mvss,
 		}
 		cleanup(inF, cleanup(outF, player.WriteFileChan(outF, player.Serialize(mvss))))
@@ -65,6 +65,21 @@ func command(in, out *os.File) string {
 		out.Name(),
 		in.Name(),
 	)
+}
+
+func closeOnEnd(xs <-chan string) <-chan string {
+	xsp := make(chan string)
+	go func() {
+		defer close(xsp)
+		for x := range xs {
+			if x == "END" {
+				return
+			}
+			xsp <- x
+		}
+
+	}()
+	return xsp
 }
 
 func cleanup(f *os.File, xs <-chan string) <-chan string {
@@ -102,28 +117,28 @@ func cleanupFile(f *os.File) error {
 	return os.Remove(f.Name())
 }
 
-// readFileChan takes in a file and returns a channel that sends each
-// line in the file
-func readFileChan(file *os.File) <-chan string {
-	lines := make(chan string)
-	go func() {
-		defer close(lines)
-		t, err := tail.TailFile(
-			file.Name(),
-			tail.Config{
-				Follow: true,
-				Logger: tail.DiscardingLogger,
-			},
-		)
-		if err != nil {
-			panic(err)
-		}
-		for line := range t.Lines {
-			lines <- line.Text
-		}
+func tailLines(file *os.File) <-chan *tail.Line {
+	t, err := tail.TailFile(
+		file.Name(),
+		tail.Config{
+			Follow: true,
+			Logger: tail.DiscardingLogger,
+		},
+	)
+	handleErr(err)
+	return t.Lines
+}
 
+func lineStrings(lines <-chan *tail.Line) <-chan string {
+	strings := make(chan string)
+	go func() {
+		defer close(strings)
+		for line := range lines {
+			handleErr(line.Err)
+			strings <- line.Text
+		}
 	}()
-	return lines
+	return strings
 }
 
 func handleErr(err error) {
