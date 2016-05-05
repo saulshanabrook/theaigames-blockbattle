@@ -9,11 +9,19 @@ func handleErr(err error) {
 	return
 }
 
+// Player holds everything you need to interact as a blockbot player
 type Player struct {
+	// States holds each of the states as they are recieved from the engine
+	// you only get a state if an action is required or if the game is over
 	States <-chan game.State
-	Moves  chan<- []game.Move
+	// Moves contains the moves you want to send, after you get a non final state
+	Moves chan<- []game.Move
+	// Done is closed after all the moves have been sent
+	Done <-chan interface{}
 }
 
+// Parse converts a channels of messages from the game engine into one of states
+// by combing the messages as they are read
 func Parse(msgs <-chan string) <-chan game.State {
 	sts := make(chan game.State)
 	go func() {
@@ -31,6 +39,8 @@ func Parse(msgs <-chan string) <-chan game.State {
 	return sts
 }
 
+// Serialize takes a list of moves and returns the string for those
+// moves to send to the game engine
 func Serialize(mvss <-chan []game.Move) <-chan string {
 	msgs := make(chan string)
 	go func() {
@@ -43,37 +53,3 @@ func Serialize(mvss <-chan []game.Move) <-chan string {
 	}()
 	return msgs
 }
-
-// Process starts a goroutine processing the player. It returns two channels.
-// the first you can read from to get the current state. Whenever you recieve
-// a state, you should send a list of moves on the second channel and then
-// wait for a new state again.
-// func (p *Player) Process() (<-chan game.State, chan<- []game.Move) {
-// 	sts := make(chan game.State)
-// 	mvss := make(chan []game.Move)
-// 	go func() {
-// 		defer close(sts)
-// 		st := (state)(game.NewState())
-// 		for msg := range p.Input {
-// 			gotAction, err := st.processLine(msg)
-// 			if err != nil {
-// 				panic(err)
-// 			}
-// 			if gotAction || game.State(st).IsOver() {
-// 				sts <- (game.State)(st)
-// 			}
-// 		}
-// 	}()
-//
-// 	go func() {
-// 		defer close(p.Output)
-// 		for mvs := range mvss {
-// 			msg, err := serializeMoves(mvs)
-// 			if err != nil {
-// 				panic(err)
-// 			}
-// 			p.Output <- msg
-// 		}
-// 	}()
-// 	return sts, mvss
-// }

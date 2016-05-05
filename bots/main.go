@@ -21,4 +21,5 @@ func Play(b Bot, p player.Player) {
 		}
 	}
 	close(p.Moves)
+	<-p.Done
 }

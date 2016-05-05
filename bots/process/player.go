@@ -16,6 +16,7 @@ func NewPlayer() player.Player {
 	return player.Player{
 		States: player.Parse(readStdinChan()),
 		Moves:  mvs,
+		Done:   writeStdinChan(player.Serialize(mvs)),
 	}
 }
 
@@ -31,8 +32,12 @@ func readStdinChan() <-chan string {
 	return lines
 }
 
-func writeStdinChan(lines <-chan string) {
-	for line := range lines {
-		fmt.Println(line)
-	}
+func writeStdinChan(lines <-chan string) <-chan interface{} {
+	done := make(chan interface{})
+	go func() {
+		for line := range lines {
+			fmt.Println(line)
+		}
+	}()
+	return done
 }

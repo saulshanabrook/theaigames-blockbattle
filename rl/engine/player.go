@@ -41,8 +41,8 @@ func NewPlayers() ([2]player.Player, error) {
 		ps[i] = player.Player{
 			States: player.Parse(closeOnEnd(lineStrings(tailLines(inF)))),
 			Moves:  mvss,
+			Done:   cleanup(inF, cleanup(outF, writeFileChan(outF, player.Serialize(mvss)))),
 		}
-		cleanup(inF, cleanup(outF, writeFileChan(outF, player.Serialize(mvss))))
 	}
 	go func() {
 		handleErr(startEngine(pCmds))
@@ -82,16 +82,14 @@ func closeOnEnd(xs <-chan string) <-chan string {
 	return xsp
 }
 
-func cleanup(f *os.File, xs <-chan string) <-chan string {
-	xsp := make(chan string)
+func cleanup(f *os.File, done <-chan interface{}) <-chan interface{} {
+	doneN := make(chan interface{})
 	go func() {
-		for x := range xs {
-			xsp <- x
-		}
-		close(xsp)
+		defer close(doneN)
+		<-done
 		handleErr(cleanupFile(f))
 	}()
-	return xsp
+	return doneN
 }
 
 func startEngine(pCmds [2]string) error {
@@ -148,16 +146,16 @@ func handleErr(err error) {
 	return
 }
 
-func writeFileChan(file *os.File, lines <-chan string) (done <-chan string) {
-	doneRW := make(chan string)
+func writeFileChan(file *os.File, lines <-chan string) (done <-chan interface{}) {
+	doneRW := make(chan interface{})
 	go func() {
+		defer close(doneRW)
 		for line := range lines {
 			_, err := file.WriteString(line + "\n")
 			if err != nil {
 				panic(err)
 			}
 		}
-		close(doneRW)
 	}()
 	return doneRW
 }
