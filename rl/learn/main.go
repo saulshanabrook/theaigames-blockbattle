@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/NOX73/go-neural/persist"
+	"github.com/Sirupsen/logrus"
 	"github.com/saulshanabrook/blockbattle/game"
 	"github.com/saulshanabrook/blockbattle/player"
 	"github.com/saulshanabrook/blockbattle/rl/bot"
@@ -53,6 +54,10 @@ func (l *Learner) RunEpisodes(n int) error {
 		} else {
 			pRandAct = 0.1
 		}
+		logrus.WithFields(logrus.Fields{
+			"p": pRandAct,
+			"i": i,
+		}).Info("Starting Episode")
 		if err := l.RunEpisode(pRandAct); err != nil {
 			return err
 		}
