@@ -90,26 +90,38 @@ func (l *Learner) Persist(filename string) {
 	persist.DumpToFile(filename, l.b.Engine.Dump())
 }
 
+// play will play a game, taking the best action it can most of the time
+// and a random one `pRandAct`% of the time.
+// It will save all experiences it comes accross as well.
 func (l *Learner) play(p player.Player, pRandAct float64) {
+	// tell the engine we dont want to send any more moves once we finish
 	defer close(p.Moves)
 	st := <-p.States
 	for {
 		var loc game.Location
 		var mvs []game.Move
 		if rand.Float64() < pRandAct {
+			// get a random action pRandAct% of the time
 			loc, mvs = randAction(st)
 		} else {
+			// otherwise use our neural network to find the best action
 			loc, mvs, _ = l.b.BestAction(st)
 		}
 		p.Moves <- mvs
+		// get our next state so we can store this experience
 		nextSt := <-p.States
-
-		// got null value which means channel is closed
-		// and game ended because of timeout
+		// got null value which means the states channel has closed
+		// and game ended because of timeout. If this is the case
+		// dont record anything and move on
 		if (nextSt == game.State{}) {
 			return
 		}
+		// By recording the current state, the action we took (loc), and the next
+		// state, we can later train on this by computing the reward given the
+		// two states
 		l.recordExperience(st, loc, nextSt)
+
+		// if the game has ended, stop playing
 		if nextSt.IsOver() {
 			return
 		}

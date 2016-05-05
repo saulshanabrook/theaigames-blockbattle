@@ -193,9 +193,7 @@ func (f Field) validPlacement(p Piece, l Location) bool {
 // bottom below them
 func (f Field) restingPositions() []Position {
 	ps := make([]Position, 0, 10)
-
 	// go through the rows from bottom to top.
-
 	cellsBelow := [numColumns]Cell{Solid, Solid, Solid, Solid, Solid, Solid, Solid, Solid, Solid, Solid}
 	for row := len(f) - 1; row >= 0; row-- {
 		cells := f[row]

@@ -2,10 +2,10 @@ bot.zip: $(shell find bots/binary -type f) bots/binary/bot
 	cd bots; zip -9 -x "*.DS_Store" -r ../bot.zip ./binary/
 
 bots/binary/bot: $(shell find .  -iname "*.go" -type f) bots/process/nn.go
-	env GOOS=linux GOARCH=amd64 go build -o bots/binary/bot bots/process/*.go
+	env GOOS=linux GOARCH=amd64 go build  -ldflags "-s" -o bots/binary/bot bots/process/*.go
 
 bots/process/nn.go: bots/process/nn
-	go-bindata -nocompress -o bots/process/nn.go  bots/process/nn
+	go-bindata -o bots/process/nn.go  bots/process/nn
 bots/process/nn:
 	go run rl/cmd/main.go
 

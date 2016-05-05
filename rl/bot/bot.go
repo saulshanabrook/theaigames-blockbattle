@@ -29,7 +29,7 @@ func NewFromBinary(b []byte) (*Bot, error) {
 
 // New creates a bot with a randomly intialized NN for rewards
 func New() *Bot {
-	network := neural.NewNetwork(numInputs, []int{numInputs, numInputs, 1})
+	network := neural.NewNetwork(numInputs, []int{numInputs, numInputs, 164, 150, 1})
 	network.RandomizeSynapses()
 	return newFromNN(network)
 }

@@ -13,7 +13,7 @@ import (
 func BenchmarkMain(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		l := learn.NewLearner(learn.DefaultLearnerConfig)
-		l.RunEpisodes(1)
+		l.RunEpisode(0)
 	}
 }
 

@@ -28,38 +28,6 @@
 
 ---
 
-Saul Shanabrook
-
-29105706
-
-# Block Battle Bot
-
-## Introduction
-
-I am designing a bot for the Block Battle challenge on The AI Games. The game is a competitive dual version of Tetris. The goal is to live longer than your opponent. If you perform certain special moves (like clearing multiple rows at once), you earn points which cause the opponent's board to fill up with added lines. The game must end, because the bottom rows are slowly filled up by the engine over time.
-
-This game has a few challenges to it. First, it is not obvious how well you are doing, until the game is over. Although there is a "score", it does not determine the winner. It would not be difficult to win the game without getting any points, by just clearing rows individually. Also, since you are playing against another bot, you can't score your bot absolutely, only in relation to the other player. It is also stochastic, because the engine randomly chooses a block to add each round. There might also be a trade off of defense and offense, as your bought weighs clearing its own board versus gaining points to hinder the opponent.
-
-If we look at every board and new piece combination as a possible state, the number of states is very large. It has an upper bound of roughly 2^(10 * 20) (each block in the board could be filled or not) * 5 (for every new piece) * 10 (for possible starting positions of the new pieces). This means we need some way of reducing the dimensionality of the state space, in order to store information about states in a generalizable manner.
-
-## Methods
-
-I chose to design to create a bot that would execute a learned policy function, which returns an action given a state. The state contains the current game information (fields for both players and the current piece and location). The action is the list of moves to take, to get the current piece into the desired location on the board.
-
-
-I chose to use reinforcement learning to train the policy function. I was inspired by DeepMind's use of deep Q networks to play Atari games (insert cite). I quickly realized that it would make sense to use neural networks as well as the value function, because then I would not have to hand engineer the features. Neural networks have been used with great success in visual feature extraction and the Tetris state is similar to a low dimensional photograph. DeepMind had success with this in Atari games, which are also very similar to Tetris.
-
-My approach has been to replicate their algorithm as much as possible, unless doing so wouldn't make sense for my problem or the tools I am using. I chose to program the learning and bot in the Go language, because of it's static typing and concurrency support. Most of my time was spent engineering the APIs that wrapped the game engine. I designed these in a way to support easily running many games concurrently and training on both players in each game. All games/players share the same neural network weights and experience bank. I make heavy use of Go's channels, and a pipelines model (insert cit), to keep this code clean and safe. Below you can see how the code for the core reinforcement learning run:
-
-<insert code for running Q learning>
-
-I chose to implement the "minibatch training"  differently than the DeepMind paper. The idea is that instead of updating the weights directly after having an experience (state, action, next state, reward), you instead save that experience in memory in a bounded length set. Then you sample randomly from the set and train the weights on those. They did those for a couple of reasons. First they said it reduces bias if we only end up in subset of states. Also, it allows use to learn many times from one experience. Instead of learning from the experience set every `n` rounds, I just continuously learned in the background, picking off an experience and learning from it. Since both the set of experiences and the neural networks weights were safe for concurrent read and writes (managed with channels and coroutines), doing this sped up the runs by a factor of 3, because it didn't have to wait to train to send out new actions.
-
-Overall I managed to get the per game during training down to <insert seconds>. Below you can see the times for running different types of games, to see where the most time is spent:
-
-<insert benchmark code>
-
-I planned to use a methauristic search technique like genetic algorithms to optimize the metaparameters for the reinforcement learning, but I did not have time to do this.  I also wanted to train to use genetic algorithms to evolve the weights in the neural networks, as opposed to reinforcement learning, and see if that worked well.
 
 
 
