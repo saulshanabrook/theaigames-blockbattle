@@ -5,6 +5,16 @@ This is my final project for my COMPSCI 383 AI class at UMass.
 It contains both the logic for training a bot using reinforcement learning
 and for creating a bot that can be played in the competition.
 
+# Quickstart
+
+1. Install Go 1.6.2
+2. `go get -u github.com/jteeuwen/go-bindata/...`
+3. `make`
+4. Upload `bot.zip` to site
+
+## Training
+To retrain `go run rl/cmd/main.go`, then `make` to recreate the zip.
+
 # Structure
 
 * `./game`: Core game logic, about the board and moves.
