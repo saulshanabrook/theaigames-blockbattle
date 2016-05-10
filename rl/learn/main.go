@@ -113,6 +113,8 @@ func (l *Learner) work(ps <-chan float64) {
 
 // RunEpisode starts up one game and does learning on both players
 func (l *Learner) RunEpisode(b *bot.Bot, pRandAct float64) error {
+	logrus.WithFields(logrus.Fields{}).Debug("Starting RunEpisode")
+	defer logrus.WithFields(logrus.Fields{}).Debug("Finishing RunEpisode")
 	players, err := bbEngine.NewPlayers()
 	if err != nil {
 		return err
@@ -134,35 +136,50 @@ func (l *Learner) RunEpisode(b *bot.Bot, pRandAct float64) error {
 // and a random one `pRandAct`% of the time.
 // It will save all experiences it comes accross as well.
 func (l *Learner) play(b *bot.Bot, p player.Player, pRandAct float64) {
+	logrus.WithFields(logrus.Fields{}).Debug("Starting play")
+	defer logrus.WithFields(logrus.Fields{}).Debug("Done play")
+
 	// tell the engine we dont want to send any more moves once we finish
 	defer close(p.Moves)
+	logrus.WithFields(logrus.Fields{}).Debug("Getting state")
 	st := <-p.States
+	logrus.WithFields(logrus.Fields{}).Debug("Done getting state")
 	for {
 		var loc game.Location
 		var mvs []game.Move
 		if rand.Float64() < pRandAct {
+			logrus.WithFields(logrus.Fields{}).Debug("Deciding random action")
 			// get a random action pRandAct% of the time
 			loc, mvs = randAction(st)
+			logrus.WithFields(logrus.Fields{}).Debug("Done deciding random action")
 		} else {
+			logrus.WithFields(logrus.Fields{}).Debug("Deciding best action")
 			// otherwise use our neural network to find the best action
 			loc, mvs, _ = b.BestAction(st)
+			logrus.WithFields(logrus.Fields{}).Debug("Done deciding best action")
 		}
+		logrus.WithFields(logrus.Fields{}).Debug("Sending moves")
 		p.Moves <- mvs
+		logrus.WithFields(logrus.Fields{}).Debug("Done sending moves/getting next state")
 		// get our next state so we can store this experience
 		nextSt := <-p.States
 		// got null value which means the states channel has closed
 		// and game ended because of timeout. If this is the case
 		// dont record anything and move on
 		if (nextSt == game.State{}) {
+			logrus.WithFields(logrus.Fields{}).Debug("Game closed from timeout")
 			return
 		}
 		// By recording the current state, the action we took (loc), and the next
 		// state, we can later train on this by computing the reward given the
 		// two states
+		logrus.WithFields(logrus.Fields{}).Debug("Recording experience")
 		l.recordExperience(st, loc, nextSt)
+		logrus.WithFields(logrus.Fields{}).Debug("Done Recording experience")
 
 		// if the game has ended, stop playing
 		if nextSt.IsOver() {
+			logrus.WithFields(logrus.Fields{}).Debug("Game over")
 			return
 		}
 		st = nextSt
@@ -177,7 +194,8 @@ func (l *Learner) startTraining() {
 }
 
 func (l *Learner) train() {
-	logrus.WithFields(logrus.Fields{}).Debug("Training")
+	logrus.WithFields(logrus.Fields{}).Debug("Starting train")
+	defer logrus.WithFields(logrus.Fields{}).Debug("Done train")
 	exp := l.exps.pick()
 	var nextVal float64
 	if exp.nextSt.IsOver() {
