@@ -10,6 +10,10 @@ const winningValue = 100
 
 func randAction(st game.State) (game.Location, []game.Move) {
 	acts := st.Actions()
+	if len(acts) == 0 {
+		// we cant move because we will lose
+		return game.Location{Position: st.Game.ThisPiecePosition}, []game.Move{}
+	}
 	chosenI := rand.Intn(len(acts))
 	i := 0
 	for loc, mvs := range acts {

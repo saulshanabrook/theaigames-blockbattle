@@ -8,8 +8,9 @@ READ_FROM="$1"
 WRITE_TO="$2"
 
 # so that tail is cleaned up
-# http://stackoverflow.com/a/2173421/907060
-trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
+#http://stackoverflow.com/a/21807140/907060
+trap '[[ -n $tailPid ]] && kill $tailPid 2>/dev/null' EXIT
 
-tail -f $READ_FROM &
+tail -f $READ_FROM & tailPid=$!
+
 cat /dev/stdin > $WRITE_TO

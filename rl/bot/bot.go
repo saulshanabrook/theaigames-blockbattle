@@ -5,17 +5,26 @@ import (
 	"math"
 
 	"github.com/NOX73/go-neural"
-	"github.com/NOX73/go-neural/engine"
 	"github.com/NOX73/go-neural/persist"
 	"github.com/saulshanabrook/blockbattle/game"
 )
 
+type Calculator interface {
+	Calculate([]float64) []float64
+}
+
 // Bot uses a deep Q network to figure out what action to take
 type Bot struct {
-	engine.Engine
+	Calculator
 }
 
 const numInputs = numActionFeatures + numStateFeatures
+
+func NewNetwork() *neural.Network {
+	network := neural.NewNetwork(numInputs, []int{numInputs, 20, 20, 20, 1})
+	network.RandomizeSynapses()
+	return network
+}
 
 // NewFromBinary returns a new NN from a binary representation of stuff
 func NewFromBinary(b []byte) (*Bot, error) {
@@ -24,20 +33,7 @@ func NewFromBinary(b []byte) (*Bot, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newFromNN(persist.FromDump(dump)), nil
-}
-
-// New creates a bot with a randomly intialized NN for rewards
-func New() *Bot {
-	network := neural.NewNetwork(numInputs, []int{numInputs, numInputs, 164, 150, 1})
-	network.RandomizeSynapses()
-	return newFromNN(network)
-}
-
-func newFromNN(n *neural.Network) *Bot {
-	eng := engine.New(n)
-	eng.Start()
-	return &Bot{eng}
+	return &Bot{persist.FromDump(dump)}, nil
 }
 
 // Act returns the best set of moves for a state

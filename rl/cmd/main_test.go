@@ -4,24 +4,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/saulshanabrook/blockbattle/bots"
 	"github.com/saulshanabrook/blockbattle/rl/bot"
 	"github.com/saulshanabrook/blockbattle/rl/engine"
-	"github.com/saulshanabrook/blockbattle/rl/learn"
 )
-
-func BenchmarkMain(b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		l := learn.NewLearner(learn.DefaultLearnerConfig)
-		l.RunEpisode(0)
-	}
-}
-
-func BenchmarkNewLearner(b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		learn.NewLearner(learn.DefaultLearnerConfig)
-	}
-}
 
 func BenchmarkRandomGame(b *testing.B) {
 	for n := 0; n < b.N; n++ {
@@ -41,7 +28,7 @@ func BenchmarkRandomActionGame(b *testing.B) {
 
 func BenchmarkRNNGame(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		b := bot.New()
+		b := &bot.Bot{Calculator: bot.NewNetwork()}
 		ps, _ := engine.NewPlayers()
 		go bots.Play(b, ps[0])
 		bots.Play(b, ps[1])
@@ -49,5 +36,7 @@ func BenchmarkRNNGame(b *testing.B) {
 }
 
 func init() {
+	logrus.SetLevel(logrus.WarnLevel)
+
 	os.Chdir("../..")
 }

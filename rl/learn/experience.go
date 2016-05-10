@@ -6,7 +6,7 @@ import (
 	"github.com/saulshanabrook/blockbattle/game"
 )
 
-const maxExperiences = 1000000
+const maxExperiences = 100000
 
 type experience struct {
 	combFeatures []float64
@@ -15,7 +15,8 @@ type experience struct {
 }
 
 type experiences struct {
-	exps        *[]*experience
+	exps        [maxExperiences]*experience
+	nExps       int
 	toAdd       chan *experience
 	needPick    chan interface{}
 	picked      chan *experience
@@ -24,9 +25,8 @@ type experiences struct {
 }
 
 func newExperiences() *experiences {
-	exps := make([]*experience, 0, maxExperiences)
 	es := experiences{
-		exps:        &exps,
+		exps:        [maxExperiences]*experience{},
 		toAdd:       make(chan *experience),
 		needPick:    make(chan interface{}),
 		picked:      make(chan *experience),
@@ -46,17 +46,18 @@ func (es *experiences) process() {
 	for {
 		select {
 		case e := <-es.toAdd:
-			if len(*es.exps) >= cap(*es.exps) {
-				(*es.exps)[rand.Intn(len(*es.exps))] = e
+			if es.nExps == maxExperiences {
+				es.exps[rand.Intn(maxExperiences)] = e
 			} else {
-				*es.exps = append(*es.exps, e)
+				es.exps[es.nExps] = e
 			}
+			es.nExps++
 			if !es.readyClosed {
 				es.readyClosed = true
 				close(es.readyChan)
 			}
 		case <-es.needPick:
-			es.picked <- (*es.exps)[rand.Intn(len(*es.exps))]
+			es.picked <- es.exps[rand.Intn(es.nExps)]
 		}
 	}
 }

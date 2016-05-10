@@ -45,7 +45,7 @@ func NewPlayers() ([2]player.Player, error) {
 		}
 	}
 	go func() {
-		handleErr(startEngine(pCmds))
+		handleErr(engineCmd(pCmds).Run())
 	}()
 	return ps, nil
 }
@@ -92,7 +92,7 @@ func cleanup(f *os.File, done <-chan interface{}) <-chan interface{} {
 	return doneN
 }
 
-func startEngine(pCmds [2]string) error {
+func engineCmd(pCmds [2]string) *exec.Cmd {
 	cmd := exec.Command(
 		"java",
 		"-cp",
@@ -103,8 +103,7 @@ func startEngine(pCmds [2]string) error {
 	)
 	// cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-
-	return cmd.Run()
+	return cmd
 }
 
 func cleanupFile(f *os.File) error {

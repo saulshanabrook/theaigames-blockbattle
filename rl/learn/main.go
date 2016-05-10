@@ -4,6 +4,8 @@ import (
 	"math/rand"
 	"sync"
 
+	"github.com/NOX73/go-neural"
+	"github.com/NOX73/go-neural/engine"
 	"github.com/NOX73/go-neural/persist"
 	"github.com/Sirupsen/logrus"
 	"github.com/saulshanabrook/blockbattle/game"
@@ -12,40 +14,74 @@ import (
 	bbEngine "github.com/saulshanabrook/blockbattle/rl/engine"
 )
 
+const DiscountFactor = 0.9
+
 // this is the back prop "speed"
 // https://github.com/NOX73/go-neural/blob/f327eff30de74b5b2d18236415bd35a2ee5c4e59/learn/learn.go#L47
-// 0.9 just seemed like an OK constant
-const nnSpeed = 0.9
+// copied from learning rate at https://gist.github.com/EderSantana/c7222daa328f0e885093#file-qlearn-py-L124
+const nnSpeed = 0.2
+
+// get new weights every n rounds
+const switchEvery = 500
 
 // Learner handles all the agent state that we learn
 type Learner struct {
-	b    *bot.Bot
-	exps *experiences
-	c    LearnerConfig
-}
-
-type LearnerConfig struct {
-	DiscountFactor float64
-}
-
-// copied from deepmind paper
-var DefaultLearnerConfig = LearnerConfig{
-	0.9,
+	e       engine.Engine
+	exps    *experiences
+	nTrains int
 }
 
 // NewLearner creates a blank agent state
-func NewLearner(c LearnerConfig) *Learner {
+func NewLearner(n *neural.Network) *Learner {
+	eng := engine.New(n)
+	eng.Start()
 	return &Learner{
-		bot.New(),
+		eng,
 		newExperiences(),
-		c,
+		0,
 	}
+}
+
+// Persist saves this NN to a file
+func (l *Learner) Persist(filename string) {
+	persist.DumpToFile(filename, l.e.Dump())
 }
 
 // RunEpisodes runs n epsidoes starting epsilon at 1 and bringing it linearly
 // to 0.1 over the first 1/2 of the trainin and keeping it at 0.1 for the rest
-func (l *Learner) RunEpisodes(n int) error {
+func (l *Learner) RunEpisodes(n int, nWorkers int) error {
+	logrus.WithFields(logrus.Fields{
+		"n episodes": n,
+		"n workers":  nWorkers,
+	}).Info("Starting Episodes")
+	ps := make(chan float64)
+
+	var wg sync.WaitGroup
+	wg.Add(nWorkers)
+	for ; nWorkers > 0; nWorkers-- {
+		go func() {
+			l.work(ps)
+			wg.Done()
+		}()
+	}
 	go l.startTraining()
+	go l.fillPs(n, ps)
+	wg.Wait()
+	return nil
+}
+
+// RunEpisodesSingle only uses one worker
+func (l *Learner) RunEpisodesSingle(n int) error {
+	logrus.WithFields(logrus.Fields{
+		"n episodes": n,
+	}).Info("Starting Episodes")
+	ps := make(chan float64)
+	go l.startTraining()
+	go l.fillPs(n, ps)
+	l.work(ps)
+	return nil
+}
+func (l *Learner) fillPs(n int, ps chan<- float64) {
 	for i := 0; i < n; i++ {
 		pComplete := float64(i) / float64(n)
 		var pRandAct float64
@@ -54,20 +90,29 @@ func (l *Learner) RunEpisodes(n int) error {
 		} else {
 			pRandAct = 0.1
 		}
-		logrus.WithFields(logrus.Fields{
-			"p": pRandAct,
-			"i": i,
-		}).Info("Starting Episode")
-		if err := l.RunEpisode(pRandAct); err != nil {
-			return err
-		}
+		logrus.WithFields(logrus.Fields{"p": pRandAct, "i": i}).Info("Running episode")
+		ps <- pRandAct
 	}
-	return nil
+	close(ps)
+}
 
+func (l *Learner) work(ps <-chan float64) {
+	logrus.WithFields(logrus.Fields{}).Info("Starting worker")
+	i := 0
+	var b *bot.Bot
+	for p := range ps {
+		if i%switchEvery == 0 {
+			logrus.WithFields(logrus.Fields{}).Info("Getting new bot for worker")
+
+			b = &bot.Bot{Calculator: persist.FromDump(l.e.Dump())}
+		}
+		l.RunEpisode(b, p)
+		i++
+	}
 }
 
 // RunEpisode starts up one game and does learning on both players
-func (l *Learner) RunEpisode(pRandAct float64) error {
+func (l *Learner) RunEpisode(b *bot.Bot, pRandAct float64) error {
 	players, err := bbEngine.NewPlayers()
 	if err != nil {
 		return err
@@ -78,22 +123,17 @@ func (l *Learner) RunEpisode(pRandAct float64) error {
 		wg.Add(1)
 		go func(p player.Player) {
 			defer wg.Done()
-			l.play(p, pRandAct)
+			l.play(b, p, pRandAct)
 		}(p)
 	}
 	wg.Wait()
 	return nil
 }
 
-// Persist saves this NN to a file
-func (l *Learner) Persist(filename string) {
-	persist.DumpToFile(filename, l.b.Engine.Dump())
-}
-
 // play will play a game, taking the best action it can most of the time
 // and a random one `pRandAct`% of the time.
 // It will save all experiences it comes accross as well.
-func (l *Learner) play(p player.Player, pRandAct float64) {
+func (l *Learner) play(b *bot.Bot, p player.Player, pRandAct float64) {
 	// tell the engine we dont want to send any more moves once we finish
 	defer close(p.Moves)
 	st := <-p.States
@@ -105,7 +145,7 @@ func (l *Learner) play(p player.Player, pRandAct float64) {
 			loc, mvs = randAction(st)
 		} else {
 			// otherwise use our neural network to find the best action
-			loc, mvs, _ = l.b.BestAction(st)
+			loc, mvs, _ = b.BestAction(st)
 		}
 		p.Moves <- mvs
 		// get our next state so we can store this experience
@@ -130,28 +170,28 @@ func (l *Learner) play(p player.Player, pRandAct float64) {
 }
 
 func (l *Learner) startTraining() {
-	go func() {
-		<-l.exps.readyChan
-		for {
-			l.train()
-		}
-	}()
+	<-l.exps.readyChan
+	for {
+		l.train()
+	}
 }
 
 func (l *Learner) train() {
+	logrus.WithFields(logrus.Fields{}).Debug("Training")
 	exp := l.exps.pick()
 	var nextVal float64
 	if exp.nextSt.IsOver() {
 		nextVal = 0
 	} else {
-		_, _, nextVal = l.b.BestAction(exp.nextSt)
+		_, _, nextVal = (&bot.Bot{Calculator: l.e}).BestAction(exp.nextSt)
 	}
 
-	l.b.Learn(
+	l.e.Learn(
 		exp.combFeatures,
-		[]float64{exp.reward + l.c.DiscountFactor*nextVal},
+		[]float64{exp.reward + DiscountFactor*nextVal},
 		nnSpeed,
 	)
+	l.nTrains++
 }
 
 func (l *Learner) recordExperience(st game.State, loc game.Location, nextSt game.State) {

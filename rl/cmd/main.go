@@ -1,6 +1,9 @@
 package main
 
-import "github.com/saulshanabrook/blockbattle/rl/learn"
+import (
+	"github.com/saulshanabrook/blockbattle/rl/bot"
+	"github.com/saulshanabrook/blockbattle/rl/learn"
+)
 
 func handleErr(err error) {
 	if err != nil {
@@ -9,8 +12,11 @@ func handleErr(err error) {
 }
 
 func main() {
-	l := learn.NewLearner(learn.DefaultLearnerConfig)
-	handleErr(l.RunEpisodes(100))
+	// logrus.SetLevel(logrus.DebugLevel)
+
+	l := learn.NewLearner(bot.NewNetwork())
+	handleErr(l.RunEpisodesSingle(10000))
 	l.Persist("bots/process/nn")
+
 	return
 }
