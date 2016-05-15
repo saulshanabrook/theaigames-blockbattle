@@ -1,7 +1,21 @@
 package game
 
+import (
+	"encoding/json"
+	"errors"
+)
+
 // Piece is a type of block
 type Piece string
+
+func (p Piece) MarshalJSON() ([]byte, error) {
+	for i, tP := range AllPieces {
+		if tP == p {
+			return json.Marshal(i)
+		}
+	}
+	return nil, errors.New("invalid piece")
+}
 
 const (
 	I Piece = "I"

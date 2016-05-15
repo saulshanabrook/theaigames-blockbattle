@@ -10,9 +10,10 @@ const (
 	MoveTurnLeft
 	MoveTurnRight
 	MoveSkip
+	MoveDrop
 )
 
-var AllMoves = []Move{MoveDown, MoveLeft, MoveRight, MoveTurnLeft, MoveTurnRight, MoveSkip}
+var AllMoves = []Move{MoveDown, MoveLeft, MoveRight, MoveTurnLeft, MoveTurnRight, MoveSkip, MoveDrop}
 
 var moveLocationDiffs = map[Move]*Location{
 	MoveDown:      {Position: Position{Row: 1}},

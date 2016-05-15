@@ -4,4 +4,4 @@ bots/binary/bot
 bots/binary/main
 bots/process/nn
 bots/process/nn.go
-rl/engine/javac
+rl/online/engine/javac

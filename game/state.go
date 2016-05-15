@@ -10,7 +10,7 @@ type PlayerState struct {
 
 // GameState holds current round information that pertains to both players
 type GameState struct {
-	Winner            Winner
+	Winner            Winner `json:"-"`
 	ThisPiece         Piece
 	NextPiece         Piece
 	ThisPiecePosition Position
@@ -18,7 +18,7 @@ type GameState struct {
 
 // State is a representation of whole current state
 type State struct {
-	Name  string
+	Name  string `json:"-"`
 	Game  GameState
 	Mine  PlayerState
 	Yours PlayerState
@@ -53,11 +53,29 @@ func NewState() State {
 }
 
 // Actions returns a list locations and moves you can make during this game
-func (s *State) Actions() map[Location][]Move {
+func (s *State) Actions() []Action {
 	if s.IsOver() {
 		panic("Game is over")
 	}
-	return s.Mine.Field.Actions(s.Game.ThisPiece, s.Game.ThisPiecePosition)
+	fActs := s.Mine.Field.Actions(s.Game.ThisPiece, s.Game.ThisPiecePosition)
+	acts := make([]Action, 0, len(fActs)+1)
+	for loc, mvs := range fActs {
+		acts = append(acts, Action{Moves: mvs, Location: loc})
+	}
+	if s.Mine.Skips > 0 {
+		acts = append(acts, Action{Moves: []Move{MoveSkip}, IsSkip: true})
+	}
+	if len(acts) == 0 {
+		// we cant move because we will lose
+		acts = append(
+			acts,
+			Action{
+				Moves:    []Move{},
+				Location: Location{Position: s.Game.ThisPiecePosition},
+			},
+		)
+	}
+	return acts
 }
 
 func newPlayerState() PlayerState {
